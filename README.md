@@ -1,8 +1,16 @@
 # fam_photo_v1
 React + FastAPI + HF
 
-# backend env
+## backend env
+- `cd backend`
+- env
 - `uv sync`
-
-# backend run
+- run
 - `uv run uvicorn main:app --host "0.0.0.0" --port "8000"`
+
+## frontend
+- `cd app`
+- env
+- `npm install`
+- run
+- `npm start`
