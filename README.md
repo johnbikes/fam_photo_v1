@@ -9,6 +9,8 @@ React + FastAPI + HF
 - `uv run uvicorn main:app --host "0.0.0.0" --port "8000"`
 - watch/dev
 - `uv run uvicorn main:app --host "0.0.0.0" --port "8000" --reload`
+- multiple workers
+- `uv run uvicorn main:app --host "0.0.0.0" --port "8000" --workers 4`
 
 ## frontend
 - `cd app`
