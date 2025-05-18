@@ -7,5 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
-    "python-multipart"
+    "python-multipart",
+    "pyjwt",
+    "passlib[bcrypt]"
 ]
