@@ -4,7 +4,7 @@ import logging
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import torch
-from diffusers import DiffusionPipeline
+from diffusers import StableDiffusionPipeline
 from typing import Optional
 import uvicorn
 
@@ -17,9 +17,7 @@ app = FastAPI(title="Text-to-Image API", description="API for generating images 
 
 # Pydantic model for request body
 class TextToImageRequest(BaseModel):
-    # prompt: str = "A happy multi-generational family posing for a group photo in a sunny backyard, smiling, casual clothing, natural light, realistic style."
-    # prompt: str = "A realistic photo of a happy family of four, parents and two kids, standing close together and smiling, outdoor setting with natural lighting, candid and warm atmosphere."
-    prompt: str = "A realistic family photo of exactly four people — two parents and two children — standing together outdoors, smiling, natural lighting, warm and candid atmosphere."
+    prompt: str
     num_inference_steps: int = 40
     guidance_scale: float = 7.5
 
@@ -27,20 +25,17 @@ class OffloadRequest(BaseModel):
     offload: bool = True
 
 # Global variable to hold the model pipeline
-model_pipeline: Optional[DiffusionPipeline] = None
+model_pipeline: Optional[StableDiffusionPipeline] = None
 model_id = "stabilityai/stable-diffusion-xl-base-1.0"
 # TODO: could add on the refiner
 device = "cuda" if torch.cuda.is_available() else "cpu"
-negative_prompt = """bad anatomy, bad proportions, deformed, disfigured, 
-cloned face, unrealistic skin texture, out of frame, 
-poorly drawn hands, extra limbs, fused fingers, blurry""".replace('\n', '')
 
 def load_model():
     """Load the Stable Diffusion model into memory."""
     global model_pipeline
     try:
         logger.info(f"Loading model {model_id} on {device}...")
-        model_pipeline = DiffusionPipeline.from_pretrained(
+        model_pipeline = StableDiffusionPipeline.from_pretrained(
             model_id,
             torch_dtype=torch.float16 if device == "cuda" else torch.float32,
             use_safetensors=True, 
@@ -75,7 +70,6 @@ def offload_model():
 @app.on_event("startup")
 async def startup_event():
     """Load the model when the app starts."""
-    logger.info(f"{negative_prompt = }")
     load_model()
 
 @app.on_event("shutdown")
@@ -97,7 +91,6 @@ async def generate_image(request: TextToImageRequest):
         with torch.no_grad():
             image = model_pipeline(
                 prompt=request.prompt,
-                negative_prompt=negative_prompt,
                 num_inference_steps=request.num_inference_steps,
                 guidance_scale=request.guidance_scale
             ).images[0]
@@ -107,7 +100,6 @@ async def generate_image(request: TextToImageRequest):
         image.save(image_path)
         logger.info("Image generated successfully.")
 
-        # TODO: just go from pil to bytes - no reason to involve disk writes
         # Read image as bytes
         with open(image_path, "rb") as f:
             image_bytes = f.read()
